@@ -33,70 +33,74 @@ const CARD = (label, corner) => `(() => {
   return c.toDataURL('image/jpeg', 0.96);
 })()`;
 
-/* An obviously fictional specimen card — the published screenshots must never
+/* An obviously fictional specimen card - the published screenshots must never
    contain a real document. */
 const SPECIMEN_FRONT = `(() => {
   const c = document.createElement('canvas'); c.width = 1011; c.height = 638;
   const g = c.getContext('2d');
-  g.fillStyle = '#f4f6f8'; g.fillRect(0,0,1011,638);
-  const grd = g.createLinearGradient(0,0,1011,0);
-  grd.addColorStop(0,'#1f3d6b'); grd.addColorStop(1,'#2d6ea8');
-  g.fillStyle = grd; g.fillRect(0,0,1011,96);
-  g.fillStyle = '#fff'; g.font = 'bold 40px sans-serif';
-  g.fillText('NATIONAL IDENTITY CARD', 28, 44);
-  g.font = '24px sans-serif'; g.fillStyle = 'rgba(255,255,255,.78)';
-  g.fillText('SPECIMEN — NOT A REAL DOCUMENT', 28, 78);
-  g.fillStyle = '#d9dee5'; g.fillRect(36,132,196,250);
-  g.fillStyle = '#aab3be';
-  g.beginPath(); g.arc(134,212,52,0,Math.PI*2); g.fill();
-  g.beginPath(); g.moveTo(56,382); g.quadraticCurveTo(134,268,212,382); g.fill();
-  g.fillStyle = '#9aa4b0'; g.font = '19px sans-serif'; g.textAlign = 'center';
-  g.fillText('PHOTO', 134, 418); g.textAlign = 'left';
-  const rows = [['Name','JANE Q. SPECIMEN'],['Identity No','00000-0000000-0'],
-                ['Date of Birth','01.01.1990'],['Issued','01.01.2020'],['Expires','01.01.2030']];
-  let y = 158;
+  g.fillStyle = '#fbfaf7'; g.fillRect(0,0,1011,638);
+  g.fillStyle = '#123b43'; g.fillRect(0,0,1011,142);
+  g.fillStyle = '#f07b5b'; g.fillRect(0,142,1011,12);
+  g.fillStyle = '#f7c873'; g.beginPath(); g.arc(856,84,130,0,Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(18,59,67,.18)';
+  for(let i=0;i<8;i++){ g.fillRect(710+i*32,0,14,142); }
+  g.fillStyle = '#fff'; g.font = 'bold 42px sans-serif';
+  g.fillText('CIVIC PASS', 34, 58);
+  g.font = '22px sans-serif'; g.fillStyle = '#d5e5e4';
+  g.fillText('FICTIONAL SPECIMEN / ID-1', 36, 100);
+  g.fillStyle = '#e8eef0'; g.fillRect(38,190,218,282);
+  g.fillStyle = '#c7d9d8'; g.fillRect(52,204,190,254);
+  g.fillStyle = '#f07b5b'; g.beginPath(); g.arc(147,285,50,0,Math.PI*2); g.fill();
+  g.fillStyle = '#123b43'; g.beginPath(); g.arc(147,278,27,0,Math.PI*2); g.fill();
+  g.beginPath(); g.moveTo(88,418); g.quadraticCurveTo(147,335,206,418); g.fill();
+  g.fillStyle = '#123b43'; g.font = 'bold 18px sans-serif'; g.textAlign = 'center';
+  g.fillText('PORTRAIT PLACEHOLDER', 147, 446); g.textAlign = 'left';
+  const rows = [['Holder','ALEX R. SAMPLE'],['Pass number','CP-2048-0715'],
+                ['Valid from','04 / 2026'],['Access class','NORTH / 03']];
+  let y = 220;
   rows.forEach(function(r){
-    g.fillStyle = '#6b7480'; g.font = '21px sans-serif'; g.fillText(r[0], 268, y);
-    g.fillStyle = '#14181d'; g.font = 'bold 27px sans-serif'; g.fillText(r[1], 268, y+32);
-    y += 66;
+    g.fillStyle = '#718087'; g.font = '18px sans-serif'; g.fillText(r[0].toUpperCase(), 304, y);
+    g.fillStyle = '#123b43'; g.font = 'bold 28px sans-serif'; g.fillText(r[1], 304, y+34);
+    y += 64;
   });
-  g.strokeStyle = '#c2cad4'; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(36,470); g.lineTo(975,470); g.stroke();
-  g.fillStyle = '#8b949f'; g.font = 'italic 22px sans-serif';
-  g.fillText('Signature', 36, 560);
-  g.strokeStyle = '#5a636e'; g.lineWidth = 3; g.beginPath();
-  g.moveTo(180,548); g.bezierCurveTo(230,505,268,585,320,536);
-  g.bezierCurveTo(356,505,392,568,430,540); g.stroke();
+  g.fillStyle = '#f07b5b'; g.fillRect(304,486,332,8);
+  g.fillStyle = '#718087'; g.font = '18px sans-serif';
+  g.fillText('THIS CARD IS A DISPLAY SAMPLE ONLY', 304, 548);
+  g.fillStyle = '#123b43'; g.font = 'bold 22px sans-serif';
+  g.fillText('CP / 04', 846, 548);
   return c.toDataURL('image/jpeg', 0.95);
 })()`;
 const SPECIMEN_BACK = `(() => {
   const c = document.createElement('canvas'); c.width = 1011; c.height = 638;
   const g = c.getContext('2d');
-  g.fillStyle = '#f4f6f8'; g.fillRect(0,0,1011,638);
-  g.fillStyle = '#14181d';
-  for(let i=0;i<21;i++){
-    for(let j=0;j<21;j++){
-      if(((i*j+i+j) % 3) === 0) g.fillRect(44+i*7, 44+j*7, 6, 6);
-    }
-  }
-  g.fillStyle = '#6b7480'; g.font = '21px sans-serif';
-  g.fillText('ISSUING AUTHORITY', 236, 66);
-  g.fillStyle = '#14181d'; g.font = 'bold 27px sans-serif';
-  g.fillText('SPECIMEN REGISTRY OFFICE', 236, 100);
-  g.fillStyle = '#6b7480'; g.font = '21px sans-serif';
-  g.fillText('PERMITTED CATEGORIES', 236, 150);
-  const cols = ['#e8a33d','#4d8fd6','#57b894','#c76b9c','#d4b23c'];
-  cols.forEach(function(col,i){ g.fillStyle = col; g.fillRect(236+i*76, 168, 66, 44); });
-  g.fillStyle = '#6b7480'; g.font = '20px sans-serif';
-  const lines = ['1. This card remains the property of the issuing authority.',
-                 '2. Report loss or damage to the nearest registry office.',
-                 '3. Reproduction of this document is an offence.'];
-  lines.forEach(function(t,i){ g.fillText(t, 44, 286 + i*34); });
-  g.fillStyle = '#14181d';
-  let x = 130;
-  for(let i=0;i<74;i++){ const w = (i%5)+2; g.fillRect(x, 420, w, 84); x += w + ((i%3)+4); }
-  g.font = 'bold 32px sans-serif'; g.textAlign = 'center';
-  g.fillText('SPEC0000000000SPECIMEN', 505, 572); g.textAlign = 'left';
+  g.fillStyle = '#fbfaf7'; g.fillRect(0,0,1011,638);
+  g.fillStyle = '#123b43'; g.fillRect(0,0,1011,112);
+  g.fillStyle = '#f07b5b'; g.fillRect(0,112,1011,12);
+  g.fillStyle = '#123b43'; g.font = 'bold 32px sans-serif';
+  g.fillText('CIVIC PASS / REVERSE', 38, 66);
+  g.fillStyle = '#d5e5e4'; g.font = '20px sans-serif';
+  g.fillText('A FICTIONAL REGISTRY SAMPLE', 40, 94);
+  g.fillStyle = '#e8eef0'; g.fillRect(38,166,935,120);
+  g.fillStyle = '#718087'; g.font = '19px sans-serif';
+  g.fillText('ISSUED BY THE NORTH DISTRICT CIVIC LAB', 62, 210);
+  g.fillStyle = '#123b43'; g.font = 'bold 27px sans-serif';
+  g.fillText('VERIFY AT THE SERVICE DESK', 62, 252);
+  g.fillStyle = '#f07b5b'; g.fillRect(754,186,176,80);
+  g.fillStyle = '#fff'; g.font = 'bold 21px sans-serif'; g.textAlign = 'center';
+  g.fillText('SAMPLE', 842, 234); g.textAlign = 'left';
+  g.fillStyle = '#718087'; g.font = '18px sans-serif';
+  const lines = ['1. This card is a fictional display sample.',
+                 '2. It has no identity, access, or payment value.',
+                 '3. Return damaged samples to the service desk.'];
+  lines.forEach(function(t,i){ g.fillText(t, 62, 354 + i*34); });
+  g.fillStyle = '#123b43';
+  let x = 62;
+  for(let i=0;i<54;i++){ const w = (i%4)+3; g.fillRect(x, 488, w, 64); x += w + ((i%3)+5); }
+  g.fillStyle = '#718087'; g.font = '18px sans-serif';
+  g.fillText('CP-2048-0715 / SAMPLE ONLY', 62, 592);
+  g.fillStyle = '#f7c873'; g.beginPath(); g.arc(900,548,62,0,Math.PI*2); g.fill();
+  g.fillStyle = '#123b43'; g.font = 'bold 24px sans-serif'; g.textAlign = 'center';
+  g.fillText('04', 900, 556); g.textAlign = 'left';
   return c.toDataURL('image/jpeg', 0.95);
 })()`;
 
