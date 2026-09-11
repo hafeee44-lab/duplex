@@ -236,12 +236,28 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 .rowbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
 /* ============================================================ align */
-.alignwrap{display:grid;grid-template-columns:minmax(0,1fr) 254px;gap:18px}
-@media (max-width:900px){.alignwrap{grid-template-columns:1fr}}
+.alignwrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start}
+#alignPanel>header{background:linear-gradient(180deg,var(--surface-2),var(--surface));}
 .stagebox{background:var(--board);border:1px solid var(--line);border-radius:var(--r);
-  padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px}
-#alignCv{display:block;width:100%;max-width:560px;height:auto;background:#fff;border-radius:5px;
-  box-shadow:0 0 0 1px var(--paper-edge),var(--sh-2)}
+  padding:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
+#alignCv{display:block;width:100%;max-width:640px;height:auto;aspect-ratio:1011/638;background:#fff;border-radius:6px;
+  box-shadow:0 0 0 1px var(--paper-edge),0 12px 28px rgba(0,0,0,.22)}
+.aligncontrols{display:flex;flex-direction:column;gap:10px}
+.aligncontrols .blk{margin:0;padding:13px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2)}
+.aligncontrols .blk h4{margin-bottom:9px}
+.aligncontrols .blk.field{gap:8px}
+@media (max-width:900px){
+  .alignwrap{grid-template-columns:1fr}
+  .aligncontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+  .aligncontrols .blk:last-child{grid-column:1 / -1}
+}
+@media (max-width:600px){
+  #alignPanel>header{align-items:stretch}
+  #blendSeg{display:flex;width:100%}
+  #blendSeg button{flex:1;padding-inline:7px}
+  .aligncontrols{grid-template-columns:1fr}
+  .aligncontrols .blk:last-child{grid-column:auto}
+}
 .legend{font-size:11.5px;color:var(--ink-3);display:flex;gap:15px;flex-wrap:wrap;justify-content:center;
   align-items:center;line-height:1.4}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
@@ -472,7 +488,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
           <canvas id="alignCv" width="1011" height="638" aria-label="Front and back overlaid"></canvas>
           <div class="legend" id="alignLegend"></div>
         </div>
-        <div>
+        <div class="aligncontrols">
           <div class="blk">
             <h4>Adjusting</h4>
             <span class="seg fill" id="targetSeg" role="group" aria-label="Which side to adjust">
