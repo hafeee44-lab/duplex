@@ -11,12 +11,10 @@ A single HTML file. No build step, no dependencies, no server, no uploads.
 [![Offline](https://img.shields.io/badge/network-never-8b5cf6)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b)](LICENSE)
 
-![Duplex](docs/screenshot-dark.png)
-
 </div>
 
 <div align="center">
-<sub>Follows your system theme, with a manual toggle. Screenshots use a fictional specimen card.</sub>
+<sub>Follows your system theme, with a manual toggle.</sub>
 </div>
 
 ---
@@ -46,11 +44,6 @@ drag either face and the other follows.
 **Scale is verifiable.** The Align panel superimposes the two sides with four overlay modes —
 ghost, difference, edge-detect, and A/B flip — so a mismatch is visible before it reaches
 paper. A size slider and 0.25 mm nudge fix it.
-
-![Align panel](docs/screenshot-align.png)
-
-<sub>Edge-detect view: the front's outlines in red, the back's in blue. Where they coincide the
-edge goes dark. A size mismatch shows up as two separated borders.</sub>
 
 **Exact millimetres.** The PDF is written by hand, byte by byte, with the card placed via an
 explicit transformation matrix. No library, no rounding through a rasteriser. Verified at
@@ -121,12 +114,6 @@ distorting the card.
 centre — otherwise mirroring puts backs where no front was printed. Portrait orientation gives
 3 columns, so the app only offers counts that fill whole rows.
 
-## Screenshots
-
-| Dark | Light |
-|---|---|
-| ![dark](docs/screenshot-dark.png) | ![light](docs/screenshot-light.png) |
-
 ## Testing
 
 ```bash
@@ -152,7 +139,8 @@ node test/verify.js
 - **Robustness** — 1×1 images, non-image files, removing a side mid-edit, the flip timer
   stopping when the panel hides, rapid mode switching, no horizontal overflow at 390 px
 
-It also regenerates the screenshots in `docs/` from a fictional specimen card.
+The verification script also exercises the full capture, alignment, layout, and PDF workflow
+with generated test cards; no sample images are required in the repository.
 
 ## Browser support
 
