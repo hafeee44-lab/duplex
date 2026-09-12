@@ -464,6 +464,77 @@ async function themeSuite(browser, ok) {
     return /595\.2\d+ x 841\.8\d+/.test(info);
   })());
 
+  /* every offered sheet size, through the real control */
+  console.log('\nPage sizes');
+  const SHEETS = { a4:[210,297], letter:[215.9,279.4], legal:[215.9,355.6],
+                   a5:[148,210], a3:[297,420] };
+  for (const key of Object.keys(SHEETS)) {
+    await page.selectOption('#pageSel', key);
+    await page.waitForTimeout(260);
+    const [w, h] = SHEETS[key];
+    const st = await page.evaluate(() => window.__duplex.page());
+    ok(`${key}: app switches to ${w} × ${h} mm`,
+       near(st.w, w, 0.01) && near(st.h, h, 0.01), `${st.w} × ${st.h}`);
+
+    const f = await savePdf(page, `page-${key}.pdf`);
+    const info = execFileSync('pdfinfo', [f]).toString();
+    const m = info.match(/Page size:\s+([\d.]+) x ([\d.]+)/);
+    const ptW = w * 72 / 25.4, ptH = h * 72 / 25.4;
+    ok(`${key}: PDF MediaBox matches`,
+       m && near(+m[1], ptW, 0.05) && near(+m[2], ptH, 0.05),
+       m ? `${m[1]} x ${m[2]} vs ${ptW.toFixed(2)} x ${ptH.toFixed(2)}` : 'no match');
+
+    const box = inkBox(f, 1);
+    ok(`${key}: card still exactly 85.6 × 54 mm`,
+       near(box.w, 85.6, 0.3) && near(box.h, 54, 0.3),
+       `${box.w.toFixed(2)} × ${box.h.toFixed(2)}`);
+
+    const bad = await page.evaluate(() => {
+      const D = window.__duplex, S = D.S, pg = D.page(), out = [];
+      const prev = S.copies;
+      const counts = [...document.querySelectorAll('#copySeg button')].map(b => parseInt(b.textContent, 10));
+      for (const n of counts) {
+        S.copies = n;
+        const d = D.dims();
+        const [fronts, backs] = D.layoutPositions();
+        const key = p => p.x.toFixed(2) + ',' + p.y.toFixed(2);
+        const fset = new Set(fronts.map(key));
+        if (backs && backs.some(b => !fset.has(key(D.mirrorPos(b.x, b.y)))))
+          out.push('n=' + n + ' misregistered');
+        [fronts, backs || []].forEach(pg2 => pg2.forEach(it => {
+          if (it.x < 5.99 || it.y < 5.99 ||
+              it.x + d.w > pg.w - 5.99 || it.y + d.h > pg.h - 5.99)
+            out.push('n=' + n + ' off-page @' + it.x.toFixed(1) + ',' + it.y.toFixed(1));
+        }));
+      }
+      S.copies = prev; D.buildCopies();
+      return out;
+    });
+    ok(`${key}: every copy count registers and fits`, bad.length === 0, bad.slice(0, 2).join('; '));
+  }
+
+  /* a custom sheet, driven through the inputs */
+  await page.selectOption('#pageSel', 'custom');
+  await page.waitForTimeout(200);
+  await page.fill('#cw', '160'); await page.dispatchEvent('#cw', 'change');
+  await page.fill('#ch', '240'); await page.dispatchEvent('#ch', 'change');
+  await page.waitForTimeout(300);
+  const cst = await page.evaluate(() => window.__duplex.page());
+  ok('custom 160 × 240 mm applies', near(cst.w, 160) && near(cst.h, 240), `${cst.w} × ${cst.h}`);
+  const cf = await savePdf(page, 'page-custom.pdf');
+  const cinfo = execFileSync('pdfinfo', [cf]).toString().match(/Page size:\s+([\d.]+) x ([\d.]+)/);
+  ok('custom PDF MediaBox matches',
+     cinfo && near(+cinfo[1], 160 * 72 / 25.4, 0.05) && near(+cinfo[2], 240 * 72 / 25.4, 0.05),
+     cinfo ? cinfo[0] : 'no match');
+  await page.fill('#cw', '5'); await page.dispatchEvent('#cw', 'change');
+  await page.waitForTimeout(250);
+  const clamped = await page.evaluate(() => window.__duplex.page());
+  ok('an absurd custom width is clamped, not obeyed', clamped.w >= 60, String(clamped.w));
+
+  await page.selectOption('#pageSel', 'a4');
+  await page.waitForTimeout(300);
+  clean();
+
   /* the rotation-matrix bug: the PDF must agree with what the preview showed */
   console.log('\nRotation — PDF must match the on-screen preview');
   for (const [portrait, r180] of [[false, false], [true, false], [false, true], [true, true]]) {

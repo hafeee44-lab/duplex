@@ -546,6 +546,24 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
         <div id="sheetbox"></div>
         <div>
           <div class="blk">
+            <h4>Paper</h4>
+            <select id="pageSel" aria-label="Page size">
+              <option value="a4" selected>A4 — 210 × 297 mm</option>
+              <option value="letter">US Letter — 8.5 × 11 in</option>
+              <option value="legal">US Legal — 8.5 × 14 in</option>
+              <option value="a5">A5 — 148 × 210 mm</option>
+              <option value="a3">A3 — 297 × 420 mm</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <div id="customSize" class="hidden" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <label class="field"><span class="lbl">Width mm</span>
+                <input type="number" id="cw" min="60" max="600" step="0.1" value="210"></label>
+              <label class="field"><span class="lbl">Height mm</span>
+                <input type="number" id="ch" min="60" max="600" step="0.1" value="297"></label>
+            </div>
+          </div>
+
+          <div class="blk">
             <h4>Copies per sheet</h4>
             <span class="seg" id="copySeg" style="flex-wrap:wrap" role="group" aria-label="Copies per sheet"></span>
             <div style="font-size:12px;color:var(--ink-3);margin-top:9px;line-height:1.5" id="copyNote"></div>
@@ -695,7 +713,24 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 
 /* ------------------------------------------------------- constants */
 var CARD_W = 85.6, CARD_H = 54;            /* ID-1, millimetres */
-var A4_W = 210, A4_H = 297;
+/* Page sizes in millimetres. The sheet is state, not a constant — everything
+   downstream (grid capacity, mirroring, the PDF MediaBox, the print CSS)
+   reads these two numbers. */
+var PAGES = {
+  a4:     { label:'A4',        w:210,   h:297   },
+  letter: { label:'US Letter', w:215.9, h:279.4 },
+  legal:  { label:'US Legal',  w:215.9, h:355.6 },
+  a5:     { label:'A5',        w:148,   h:210   },
+  a3:     { label:'A3',        w:297,   h:420   },
+  custom: { label:'Custom',    w:210,   h:297   }
+};
+var pageKey = 'a4';
+var PAGE_W = PAGES.a4.w, PAGE_H = PAGES.a4.h;
+function pageLabel(){
+  var p = PAGES[pageKey];
+  return (pageKey === 'custom' ? 'Custom' : p.label) + ' ' +
+         (+PAGE_W.toFixed(1)) + ' × ' + (+PAGE_H.toFixed(1)) + ' mm';
+}
 var RATIO = CARD_W / CARD_H;
 var DPI = 300;
 var OUT_W = Math.round(CARD_W / 25.4 * DPI);   /* 1011 */
@@ -763,13 +798,13 @@ $('#themeBtn').addEventListener('click', function(){
 
 /* ------------------------------------------------------- grid & layout */
 function gridFor(uw, uh, n){
-  var cols = Math.max(1, Math.floor((A4_W - 2*GM + GG) / (uw + GG)));
-  var rows = Math.max(1, Math.floor((A4_H - 2*GM + GG) / (uh + GG)));
+  var cols = Math.max(1, Math.floor((PAGE_W - 2*GM + GG) / (uw + GG)));
+  var rows = Math.max(1, Math.floor((PAGE_H - 2*GM + GG) / (uh + GG)));
   var cap = cols * rows;
   n = Math.max(1, Math.min(n, cap));
   var c = Math.min(cols, n), r = Math.ceil(n/c);
   var totW = c*uw + (c-1)*GG, totH = r*uh + (r-1)*GG;
-  var x0 = (A4_W - totW)/2, y0 = (A4_H - totH)/2;
+  var x0 = (PAGE_W - totW)/2, y0 = (PAGE_H - totH)/2;
   var pos = [];
   for(var i=0;i<n;i++) pos.push({ x: x0 + (i%c)*(uw+GG), y: y0 + Math.floor(i/c)*(uh+GG) });
   return { pos:pos, cap:cap, cols:cols, usedCols:c, rows:r, n:n };
@@ -790,8 +825,8 @@ function duplexCountOk(n, cols, cap){
 
 function mirrorPos(x, y){
   var d = dims();
-  return S.flip === 'lr' ? { x: A4_W - d.w - x, y: y }
-                         : { x: x, y: A4_H - d.h - y };
+  return S.flip === 'lr' ? { x: PAGE_W - d.w - x, y: y }
+                         : { x: x, y: PAGE_H - d.h - y };
 }
 function syncMirror(){
   if(S.mode !== 'duplex' || S.copies > 1) return;
@@ -827,6 +862,21 @@ function layoutPositions(){
     items.push({side:'back',  x:p.x, y:p.y + d.h + PG});
   });
   return [items];
+}
+
+function setPage(key, w, h){
+  if(!PAGES[key]) key = 'a4';
+  pageKey = key;
+  if(key === 'custom'){
+    PAGES.custom.w = clamp(+w || PAGE_W, 60, 600);
+    PAGES.custom.h = clamp(+h || PAGE_H, 60, 600);
+  }
+  PAGE_W = PAGES[key].w; PAGE_H = PAGES[key].h;
+  /* capacity and every stored position depend on the sheet, so rebuild both */
+  buildCopies();
+  applyPreset(S.mode === 'duplex' ? 'topleft' : 'stacktl');
+  buildSheets();
+  refreshReady();
 }
 
 /* ------------------------------------------------------- image loading */
@@ -1094,17 +1144,17 @@ function buildSheets(){
 
   var availW = (box.clientWidth||620) - 48 - (pages.length-1)*22;
   var availH = Math.min(window.innerHeight*0.56, 640);
-  PX = Math.max(0.8, Math.min(availW/(A4_W*pages.length), availH/A4_H));
+  PX = Math.max(0.8, Math.min(availW/(PAGE_W*pages.length), availH/PAGE_H));
 
   box.innerHTML = '';
   pages.forEach(function(items, pi){
     var wrap = document.createElement('div'); wrap.className='sheetwrap';
     var cap = document.createElement('div'); cap.className='cap'; cap.innerHTML = labels[pi]||'';
     var sh = document.createElement('div'); sh.className='sheet';
-    sh.style.width=(A4_W*PX)+'px'; sh.style.height=(A4_H*PX)+'px';
+    sh.style.width=(PAGE_W*PX)+'px'; sh.style.height=(PAGE_H*PX)+'px';
     var sf = document.createElement('div'); sf.className='safe';
     sf.style.left=(SAFE*PX)+'px'; sf.style.top=(SAFE*PX)+'px';
-    sf.style.width=((A4_W-2*SAFE)*PX)+'px'; sf.style.height=((A4_H-2*SAFE)*PX)+'px';
+    sf.style.width=((PAGE_W-2*SAFE)*PX)+'px'; sf.style.height=((PAGE_H-2*SAFE)*PX)+'px';
     sh.appendChild(sf);
     var gv=document.createElement('div'); gv.className='guide'; gv.dataset.g='v';
     var gh=document.createElement('div'); gh.className='guide'; gh.dataset.g='h';
@@ -1173,7 +1223,7 @@ function updateReadout(){
   var rows = [
     ['Card', CARD_W + ' × ' + CARD_H + ' mm'],
     ['On page', d.w + ' × ' + d.h + ' mm'],
-    ['Sheet', 'A4 ' + A4_W + ' × ' + A4_H + ' mm']
+    ['Sheet', pageLabel()]
   ];
   if(S.copies > 1){
     var gg = gridFor(unitSize().w, unitSize().h, S.copies);
@@ -1225,10 +1275,10 @@ function makeDraggable(el, side, sheet){
 }
 function setPos(side, x, y){
   var d = dims();
-  x = clamp(x, 0, A4_W-d.w); y = clamp(y, 0, A4_H-d.h);
+  x = clamp(x, 0, PAGE_W-d.w); y = clamp(y, 0, PAGE_H-d.h);
   if(S.mode==='duplex'){
     if(side==='back'){ var m = mirrorPos(x,y); x = m.x; y = m.y; }  /* mirror is its own inverse */
-    S.front.x = clamp(x,0,A4_W-d.w); S.front.y = clamp(y,0,A4_H-d.h);
+    S.front.x = clamp(x,0,PAGE_W-d.w); S.front.y = clamp(y,0,PAGE_H-d.h);
     syncMirror();
   } else { S[side].x = x; S[side].y = y; }
 }
@@ -1236,8 +1286,8 @@ function snap(x, y, d, sheet, side){
   var T = 2.4;
   var gv = $('[data-g="v"]', sheet), gh = $('[data-g="h"]', sheet);
   var other = S[side==='front'?'back':'front'];
-  var cx = [(A4_W-d.w)/2, SAFE, A4_W-SAFE-d.w, GM+10];
-  var cy = [(A4_H-d.h)/2, SAFE, A4_H-SAFE-d.h, GM+10];
+  var cx = [(PAGE_W-d.w)/2, SAFE, PAGE_W-SAFE-d.w, GM+10];
+  var cy = [(PAGE_H-d.h)/2, SAFE, PAGE_H-SAFE-d.h, GM+10];
   var hx=null, hy=null;
   cx.forEach(function(v){ if(hx===null && Math.abs(x-v)<T) hx=v; });
   cy.forEach(function(v){ if(hy===null && Math.abs(y-v)<T) hy=v; });
@@ -1281,19 +1331,19 @@ function buildPresets(){
 function applyPreset(k){
   var d = dims(), gap = 8;
   if(k==='topleft'){ S.front.x=18; S.front.y=18; }
-  else if(k==='topcent'){ S.front.x=(A4_W-d.w)/2; S.front.y=18; }
-  else if(k==='center'){ S.front.x=(A4_W-d.w)/2; S.front.y=(A4_H-d.h)/2; }
+  else if(k==='topcent'){ S.front.x=(PAGE_W-d.w)/2; S.front.y=18; }
+  else if(k==='center'){ S.front.x=(PAGE_W-d.w)/2; S.front.y=(PAGE_H-d.h)/2; }
   else if(k==='stacktl'){ S.front.x=18; S.front.y=18; S.back.x=18; S.back.y=18+d.h+gap; }
   else if(k==='stackc'){
-    var tot=d.h*2+gap, top=(A4_H-tot)/2, lx=(A4_W-d.w)/2;
+    var tot=d.h*2+gap, top=(PAGE_H-tot)/2, lx=(PAGE_W-d.w)/2;
     S.front.x=lx; S.front.y=top; S.back.x=lx; S.back.y=top+d.h+gap;
   } else if(k==='sbs'){
-    var lx2 = Math.max(SAFE, (A4_W-(d.w*2+gap))/2);
+    var lx2 = Math.max(SAFE, (PAGE_W-(d.w*2+gap))/2);
     S.front.x=lx2; S.front.y=40;
-    S.back.x=Math.min(lx2+d.w+gap, A4_W-SAFE-d.w); S.back.y=40;
+    S.back.x=Math.min(lx2+d.w+gap, PAGE_W-SAFE-d.w); S.back.y=40;
   }
-  S.front.x = clamp(S.front.x, 0, A4_W-d.w); S.front.y = clamp(S.front.y, 0, A4_H-d.h);
-  S.back.x  = clamp(S.back.x,  0, A4_W-d.w); S.back.y  = clamp(S.back.y,  0, A4_H-d.h);
+  S.front.x = clamp(S.front.x, 0, PAGE_W-d.w); S.front.y = clamp(S.front.y, 0, PAGE_H-d.h);
+  S.back.x  = clamp(S.back.x,  0, PAGE_W-d.w); S.back.y  = clamp(S.back.y,  0, PAGE_H-d.h);
   syncMirror(); drawSheets();
 }
 function buildCopies(){
@@ -1356,7 +1406,7 @@ function cmFor(x, y, rot, PH){
 }
 function buildPdf(pages, images, opts){
   opts = opts||{};
-  var PW = A4_W*MM2PT, PH = A4_H*MM2PT;
+  var PW = PAGE_W*MM2PT, PH = PAGE_H*MM2PT;
   var chunks=[], len=0;
   function push(v){ var b = (v instanceof Uint8Array)?v:strBytes(v); chunks.push(b); len+=b.length; }
   var P = pages.length, N = images.length;
@@ -1430,7 +1480,7 @@ function makePdf(){
   if(!bothReady()) return;
   var doc = currentDoc();
   download(buildPdf(doc.pages, doc.images, {border:S.border}),
-           S.mode==='duplex' ? 'card-two-sided.pdf' : 'card-one-page.pdf');
+           'card-' + (S.mode==='duplex' ? 'two-sided' : 'one-page') + '-' + pageKey + '.pdf');
   say(S.mode==='duplex'
     ? 'Saved. Print page 1, reinsert, print page 2 — at 100% scale.'
     : 'Saved. Print at 100% scale.', 'ok');
@@ -1474,22 +1524,27 @@ function testSheet(){
 }
 
 /* ------------------------------------------------------- browser print */
-var printArea = null;
+var printArea = null, printStyle = null;
+/* explicit millimetres rather than a named size, so custom sheets work too */
+function updatePrintCss(){
+  if(!printStyle) return;
+  var w = (+PAGE_W.toFixed(2)) + 'mm', h = (+PAGE_H.toFixed(2)) + 'mm';
+  printStyle.textContent = '#printArea{display:none}' +
+    '@media print{@page{size:' + w + ' ' + h + ';margin:0}' +
+    'html,body{background:#fff!important;margin:0!important;padding:0!important}' +
+    'body>*:not(#printArea){display:none!important}' +
+    '#printArea{display:block!important}' +
+    '#printArea .p{position:relative;width:' + w + ';height:' + h + ';overflow:hidden;' +
+      'page-break-after:always;break-after:page}' +
+    '#printArea .p:last-child{page-break-after:auto;break-after:auto}' +
+    '#printArea img{position:absolute;display:block}}';
+}
 function ensurePrintArea(){
   if(printArea) return printArea;
   printArea = document.createElement('div');
   printArea.id = 'printArea';
-  var st = document.createElement('style');
-  st.textContent = '#printArea{display:none}' +
-    '@media print{@page{size:A4 portrait;margin:0}' +
-    'html,body{background:#fff!important;margin:0!important;padding:0!important}' +
-    'body>*:not(#printArea){display:none!important}' +
-    '#printArea{display:block!important}' +
-    '#printArea .p{position:relative;width:210mm;height:297mm;overflow:hidden;' +
-      'page-break-after:always;break-after:page}' +
-    '#printArea .p:last-child{page-break-after:auto;break-after:auto}' +
-    '#printArea img{position:absolute;display:block}}';
-  document.head.appendChild(st);
+  printStyle = document.createElement('style');
+  document.head.appendChild(printStyle);
   document.body.appendChild(printArea);
   return printArea;
 }
@@ -1508,6 +1563,7 @@ function placeImg(pageEl, srcUrl, x, y, rot){
 function doPrint(){
   if(!bothReady()) return;
   var pa = ensurePrintArea();
+  updatePrintCss();
   pa.innerHTML='';
   /* encode each side once, not once per copy */
   var urls = { front: S.front.out.toDataURL('image/jpeg', 0.94),
@@ -1900,6 +1956,22 @@ $('#optRot90').addEventListener('change', function(e){
   applyPreset(S.mode==='duplex'?'topleft':'stacktl');
   buildSheets(); refreshReady();
 });
+$('#pageSel').addEventListener('change', function(e){
+  var key = e.target.value;
+  $('#customSize').classList.toggle('hidden', key !== 'custom');
+  if(key === 'custom'){
+    $('#cw').value = (+PAGE_W.toFixed(1));
+    $('#ch').value = (+PAGE_H.toFixed(1));
+  }
+  setPage(key, $('#cw').value, $('#ch').value);
+});
+function customChanged(){
+  if(pageKey !== 'custom') return;
+  setPage('custom', $('#cw').value, $('#ch').value);
+}
+$('#cw').addEventListener('change', customChanged);
+$('#ch').addEventListener('change', customChanged);
+
 $('#btnPdf').addEventListener('click', makePdf);
 $('#btnPrint').addEventListener('click', doPrint);
 $('#btnTest').addEventListener('click', testSheet);
@@ -1929,7 +2001,9 @@ window.__duplex = { S:S, AL:AL, buildPdf:buildPdf, cmFor:cmFor, currentDoc:curre
                     gridInfo:gridInfo, duplexCountOk:duplexCountOk, cardRot:cardRot, dims:dims,
                     buildSheets:buildSheets, drawSheets:drawSheets, syncAlign:syncAlign,
                     renderAlign:renderAlign, buildCopies:buildCopies, mirrorPos:mirrorPos,
-                    CARD_W:CARD_W, CARD_H:CARD_H, A4_W:A4_W, A4_H:A4_H };
+                    CARD_W:CARD_W, CARD_H:CARD_H,
+                    page:function(){ return { key:pageKey, w:PAGE_W, h:PAGE_H }; },
+                    setPage:setPage, PAGES:PAGES };
 })();
 </script>
 </body>

@@ -6,3 +6,4 @@ Thumbs.db
 /tmp/
 *.pdf
 !docs/*.pdf
+.vercel
