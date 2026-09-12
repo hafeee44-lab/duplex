@@ -11,7 +11,7 @@ A single HTML file. No build step, no dependencies, no server, no uploads.
 [![Offline](https://img.shields.io/badge/network-never-8b5cf6)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f59e0b)](LICENSE)
 
-[Open Duplex](https://cnic-duplex.vercel.app/)
+[Try Duplex](https://cnic-duplex.vercel.app/)
 
 ![Duplex](docs/hero-dark.png)
 
