@@ -33,85 +33,25 @@ const CARD = (label, corner) => `(() => {
   return c.toDataURL('image/jpeg', 0.96);
 })()`;
 
-/* An obviously fictional specimen card - the published screenshots must never
-   contain a real document. */
-const SPECIMEN_FRONT = `(() => {
+/* Plain test fixture: a solid block with an optional bright patch marking the
+   top-left corner, so orientation is measurable. */
+function drawTestCard([label, corner]) {
   const c = document.createElement('canvas'); c.width = 1011; c.height = 638;
   const g = c.getContext('2d');
-  g.fillStyle = '#fbfaf7'; g.fillRect(0,0,1011,638);
-  g.fillStyle = '#123b43'; g.fillRect(0,0,1011,142);
-  g.fillStyle = '#f07b5b'; g.fillRect(0,142,1011,12);
-  g.fillStyle = '#f7c873'; g.beginPath(); g.arc(856,84,130,0,Math.PI*2); g.fill();
-  g.fillStyle = 'rgba(18,59,67,.18)';
-  for(let i=0;i<8;i++){ g.fillRect(710+i*32,0,14,142); }
-  g.fillStyle = '#fff'; g.font = 'bold 42px sans-serif';
-  g.fillText('CIVIC PASS', 34, 58);
-  g.font = '22px sans-serif'; g.fillStyle = '#d5e5e4';
-  g.fillText('FICTIONAL SPECIMEN / ID-1', 36, 100);
-  g.fillStyle = '#e8eef0'; g.fillRect(38,190,218,282);
-  g.fillStyle = '#c7d9d8'; g.fillRect(52,204,190,254);
-  g.fillStyle = '#f07b5b'; g.beginPath(); g.arc(147,285,50,0,Math.PI*2); g.fill();
-  g.fillStyle = '#123b43'; g.beginPath(); g.arc(147,278,27,0,Math.PI*2); g.fill();
-  g.beginPath(); g.moveTo(88,418); g.quadraticCurveTo(147,335,206,418); g.fill();
-  g.fillStyle = '#123b43'; g.font = 'bold 18px sans-serif'; g.textAlign = 'center';
-  g.fillText('PORTRAIT PLACEHOLDER', 147, 446); g.textAlign = 'left';
-  const rows = [['Holder','ALEX R. SAMPLE'],['Pass number','CP-2048-0715'],
-                ['Valid from','04 / 2026'],['Access class','NORTH / 03']];
-  let y = 220;
-  rows.forEach(function(r){
-    g.fillStyle = '#718087'; g.font = '18px sans-serif'; g.fillText(r[0].toUpperCase(), 304, y);
-    g.fillStyle = '#123b43'; g.font = 'bold 28px sans-serif'; g.fillText(r[1], 304, y+34);
-    y += 64;
-  });
-  g.fillStyle = '#f07b5b'; g.fillRect(304,486,332,8);
-  g.fillStyle = '#718087'; g.font = '18px sans-serif';
-  g.fillText('THIS CARD IS A DISPLAY SAMPLE ONLY', 304, 548);
-  g.fillStyle = '#123b43'; g.font = 'bold 22px sans-serif';
-  g.fillText('CP / 04', 846, 548);
-  return c.toDataURL('image/jpeg', 0.95);
-})()`;
-const SPECIMEN_BACK = `(() => {
-  const c = document.createElement('canvas'); c.width = 1011; c.height = 638;
-  const g = c.getContext('2d');
-  g.fillStyle = '#fbfaf7'; g.fillRect(0,0,1011,638);
-  g.fillStyle = '#123b43'; g.fillRect(0,0,1011,112);
-  g.fillStyle = '#f07b5b'; g.fillRect(0,112,1011,12);
-  g.fillStyle = '#123b43'; g.font = 'bold 32px sans-serif';
-  g.fillText('CIVIC PASS / REVERSE', 38, 66);
-  g.fillStyle = '#d5e5e4'; g.font = '20px sans-serif';
-  g.fillText('A FICTIONAL REGISTRY SAMPLE', 40, 94);
-  g.fillStyle = '#e8eef0'; g.fillRect(38,166,935,120);
-  g.fillStyle = '#718087'; g.font = '19px sans-serif';
-  g.fillText('ISSUED BY THE NORTH DISTRICT CIVIC LAB', 62, 210);
-  g.fillStyle = '#123b43'; g.font = 'bold 27px sans-serif';
-  g.fillText('VERIFY AT THE SERVICE DESK', 62, 252);
-  g.fillStyle = '#f07b5b'; g.fillRect(754,186,176,80);
-  g.fillStyle = '#fff'; g.font = 'bold 21px sans-serif'; g.textAlign = 'center';
-  g.fillText('SAMPLE', 842, 234); g.textAlign = 'left';
-  g.fillStyle = '#718087'; g.font = '18px sans-serif';
-  const lines = ['1. This card is a fictional display sample.',
-                 '2. It has no identity, access, or payment value.',
-                 '3. Return damaged samples to the service desk.'];
-  lines.forEach(function(t,i){ g.fillText(t, 62, 354 + i*34); });
-  g.fillStyle = '#123b43';
-  let x = 62;
-  for(let i=0;i<54;i++){ const w = (i%4)+3; g.fillRect(x, 488, w, 64); x += w + ((i%3)+5); }
-  g.fillStyle = '#718087'; g.font = '18px sans-serif';
-  g.fillText('CP-2048-0715 / SAMPLE ONLY', 62, 592);
-  g.fillStyle = '#f7c873'; g.beginPath(); g.arc(900,548,62,0,Math.PI*2); g.fill();
-  g.fillStyle = '#123b43'; g.font = 'bold 24px sans-serif'; g.textAlign = 'center';
-  g.fillText('04', 900, 556); g.textAlign = 'left';
-  return c.toDataURL('image/jpeg', 0.95);
-})()`;
-
-async function loadSpecimen(page) {
-  for (const [side, src] of [['front', SPECIMEN_FRONT], ['back', SPECIMEN_BACK]]) {
-    const url = await page.evaluate(src);
+  g.fillStyle = '#000'; g.fillRect(0, 0, 1011, 638);
+  g.fillStyle = '#fff'; g.font = 'bold 150px sans-serif'; g.textAlign = 'center';
+  g.fillText(label, 505, 400);
+  if (corner) { g.fillStyle = '#fff'; g.fillRect(0, 0, 300, 170); }
+  return c.toDataURL('image/jpeg', 0.96);
+}
+async function loadSides(page, cornerMark = false) {
+  for (const [side, label] of [['front', 'F'], ['back', 'B']]) {
+    const url = await page.evaluate(drawTestCard, [label, cornerMark]);
     await page.evaluate(async ([side, url]) => {
       const blob = await (await fetch(url)).blob();
-      window.__duplex.loadFile(new File([blob], 'specimen.jpg', { type: 'image/jpeg' }), side);
+      window.__duplex.loadFile(new File([blob], 'x.jpg', { type: 'image/jpeg' }), side);
     }, [side, url]);
-    await page.waitForTimeout(480);
+    await page.waitForTimeout(450);
     await page.evaluate(side => {
       const c = window.__duplex.S[side];
       c.crop = { x: 0, y: 0, w: c.work.width, h: c.work.height };
@@ -122,14 +62,131 @@ async function loadSpecimen(page) {
   }
 }
 
-async function loadSides(page, cornerMark = false) {
-  for (const [side, label] of [['front', 'F'], ['back', 'B']]) {
-    const url = await page.evaluate(CARD(label, cornerMark));
+/* An obviously fictional specimen card, drawn well enough that the published
+   screenshots look like the real job. Never a real document.
+   Passed to the page as a function, not a template string. */
+function drawSpecimen([side, looseCrop]) {
+  const c = document.createElement('canvas'); c.width = 1011; c.height = 638;
+  const g = c.getContext('2d');
+
+  const guilloche = (col) => {
+    g.save(); g.strokeStyle = col; g.lineWidth = 0.7; g.globalAlpha = 0.5;
+    for (let k = 0; k < 26; k++) {
+      g.beginPath();
+      for (let t = 0; t <= 1011; t += 4) {
+        const y = 319 + Math.sin(t / 52 + k / 3.1) * 245 * Math.cos(t / 197 + k / 7);
+        t === 0 ? g.moveTo(t, y) : g.lineTo(t, y);
+      }
+      g.stroke();
+    }
+    g.restore();
+  };
+  const portrait = (x, y, w, h) => {
+    const grd = g.createLinearGradient(x, y, x, y + h);
+    grd.addColorStop(0, '#cfd8e3'); grd.addColorStop(1, '#aebac8');
+    g.fillStyle = grd; g.fillRect(x, y, w, h);
+    g.fillStyle = '#8d9aab';
+    g.beginPath(); g.arc(x + w / 2, y + h * 0.36, w * 0.27, 0, Math.PI * 2); g.fill();
+    g.beginPath();
+    g.moveTo(x + w * 0.12, y + h);
+    g.bezierCurveTo(x + w * 0.16, y + h * 0.62, x + w * 0.84, y + h * 0.62, x + w * 0.88, y + h);
+    g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
+  };
+
+  const bg = g.createLinearGradient(0, 0, 1011, 638);
+  bg.addColorStop(0, '#f7f9fb'); bg.addColorStop(0.55, '#eef3f8'); bg.addColorStop(1, '#e6edf5');
+  g.fillStyle = bg; g.fillRect(0, 0, 1011, 638);
+
+  if (side === 'front') {
+    guilloche('#b9cbe0');
+    const hd = g.createLinearGradient(0, 0, 1011, 0);
+    hd.addColorStop(0, '#123a63'); hd.addColorStop(1, '#2f6fa8');
+    g.fillStyle = hd; g.fillRect(0, 0, 1011, 104);
+    g.fillStyle = '#fff'; g.font = '700 37px system-ui, sans-serif';
+    g.fillText('REPUBLIC OF SPECIMEN', 30, 46);
+    g.font = '500 21px system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,.82)';
+    g.fillText('IDENTITY CARD  ·  SAMPLE — NOT A REAL DOCUMENT', 30, 80);
+    portrait(34, 136, 196, 252);
+    let y = 162;
+    [['NAME', 'ALEX J. SPECIMEN'], ['IDENTITY NUMBER', '00000-0000000-0'],
+     ['DATE OF BIRTH', '01 JAN 1990'], ['ISSUED', '01 JAN 2020'],
+     ['EXPIRES', '01 JAN 2030']].forEach(r => {
+      g.fillStyle = '#64748b'; g.font = '500 18px system-ui, sans-serif'; g.fillText(r[0], 262, y);
+      g.fillStyle = '#0f1b2a'; g.font = '600 29px system-ui, sans-serif'; g.fillText(r[1], 262, y + 32);
+      y += 63;
+    });
+    g.strokeStyle = 'rgba(20,40,70,.16)'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(34, 412); g.lineTo(977, 412); g.stroke();
+    g.fillStyle = '#64748b'; g.font = '500 17px system-ui, sans-serif';
+    g.fillText('HOLDER SIGNATURE', 34, 442);
+    g.strokeStyle = '#2b3a4d'; g.lineWidth = 3.4; g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(44, 506); g.bezierCurveTo(92, 456, 132, 548, 182, 494);
+    g.bezierCurveTo(222, 450, 258, 542, 300, 500);
+    g.bezierCurveTo(330, 470, 346, 516, 372, 498); g.stroke();
+    g.fillStyle = 'rgba(18,58,99,.10)';
+    g.beginPath(); g.arc(880, 500, 84, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(18,58,99,.34)'; g.lineWidth = 2;
+    g.beginPath(); g.arc(880, 500, 84, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.arc(880, 500, 68, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = 'rgba(18,58,99,.45)'; g.font = '700 20px system-ui, sans-serif';
+    g.textAlign = 'center'; g.fillText('SPECIMEN', 880, 495); g.fillText('SEAL', 880, 522);
+    g.textAlign = 'left';
+  } else {
+    guilloche('#c3d3e4');
+    g.fillStyle = '#0f1b2a'; g.fillRect(0, 34, 1011, 78);
+    g.fillStyle = '#fff';
+    for (let i = 0; i < 22; i++)
+      for (let j = 0; j < 22; j++)
+        if (((i * j + i * 3 + j) % 3) === 0) g.fillRect(40 + i * 6, 152 + j * 6, 5, 5);
+    g.fillStyle = '#0f1b2a'; g.fillRect(34, 146, 6, 144);
+    g.fillStyle = '#64748b'; g.font = '500 18px system-ui, sans-serif';
+    g.fillText('ISSUING AUTHORITY', 216, 168);
+    g.fillStyle = '#0f1b2a'; g.font = '600 27px system-ui, sans-serif';
+    g.fillText('SPECIMEN REGISTRY OFFICE', 216, 198);
+    g.fillStyle = '#64748b'; g.font = '500 18px system-ui, sans-serif';
+    g.fillText('CATEGORIES', 216, 246);
+    ['#d98a2b', '#3f7fc4', '#4aa583', '#b4608f', '#c2a438'].forEach((col, i) => {
+      g.fillStyle = col; g.fillRect(216 + i * 62, 262, 54, 34);
+    });
+    g.fillStyle = '#64748b'; g.font = '400 18px system-ui, sans-serif';
+    ['1. This card remains the property of the issuing authority.',
+     '2. Report loss or damage to the nearest registry office.',
+     '3. Reproduction of this document is an offence.'].forEach((t, i) => {
+      g.fillText(t, 34, 340 + i * 30);
+    });
+    g.fillStyle = '#0f1b2a';
+    let x = 120;
+    for (let i = 0; i < 78; i++) { const w = (i % 4) + 2; g.fillRect(x, 448, w, 78); x += w + ((i % 3) + 4); }
+    g.font = '600 26px ui-monospace, monospace'; g.textAlign = 'center';
+    g.fillText('SPEC0000000000ALEXJSPECIMEN', 505, 578); g.textAlign = 'left';
+  }
+
+  /* a border rule, as most real cards have */
+  g.strokeStyle = 'rgba(18,45,80,.45)'; g.lineWidth = 3;
+  g.strokeRect(1.5, 1.5, 1008, 635);
+
+  if (!looseCrop) return c.toDataURL('image/jpeg', 0.94);
+
+  /* re-frame with ~2.5 mm of background top and bottom — the loose crop that
+     motivated the align panel in the first place */
+  const o = document.createElement('canvas'); o.width = 1011; o.height = 638;
+  const og = o.getContext('2d');
+  og.fillStyle = '#fbfcfd'; og.fillRect(0, 0, 1011, 638);
+  og.drawImage(c, 0, 30, 1011, 578);
+  return o.toDataURL('image/jpeg', 0.94);
+}
+
+async function loadSpecimen(page, looseBack) {
+  for (const side of ['front', 'back']) {
+    const loose = looseBack && side === 'back';
+    const url = await page.evaluate(drawSpecimen, [side, loose]);
     await page.evaluate(async ([side, url]) => {
       const blob = await (await fetch(url)).blob();
-      window.__duplex.loadFile(new File([blob], 'x.jpg', { type: 'image/jpeg' }), side);
+      window.__duplex.loadFile(new File([blob], 'specimen.jpg', { type: 'image/jpeg' }), side);
     }, [side, url]);
-    await page.waitForTimeout(450);
+    await page.waitForTimeout(480);
     await page.evaluate(side => {
       const c = window.__duplex.S[side];
       c.crop = { x: 0, y: 0, w: c.work.width, h: c.work.height };
@@ -461,10 +518,10 @@ async function themeSuite(browser, ok) {
      (await page.textContent('#vSize')) === '100.0%');
   await tap(page, '[data-target="back"]'); await page.waitForTimeout(180);
 
-  for (const mode of ['diff', 'ghost', 'flip', 'edges']) {
+  for (const mode of ['diff', 'flip', 'overlay']) {
     await page.click(`[data-blend="${mode}"]`); await page.waitForTimeout(300);
   }
-  ok('all four overlay modes render cleanly', errs.length === 0, errs[0]);
+  ok('all overlay modes render cleanly', errs.length === 0, errs[0]);
   ok('copy-crop is offered when both scans match in size', !(await page.isDisabled('#copyCrop')));
   clean();
 
@@ -531,42 +588,63 @@ async function themeSuite(browser, ok) {
     ['front','back'].forEach(sd => document.querySelector('#slot-'+sd+' [data-act="remove"]')?.click());
   });
   await page.waitForTimeout(250);
-  await loadSpecimen(page);
+  await loadSpecimen(page, true);          /* loose back, so the mismatch is real */
   await page.evaluate(() => {
-    const b = [...document.querySelectorAll('#copySeg button')].find(x => x.textContent.startsWith('8'));
-    if (b) b.click();
-    document.querySelector('[data-blend="edges"]').click();
+    document.querySelector('[data-blend="overlay"]').click();
+    document.documentElement.setAttribute('data-theme', 'dark');
   });
   await page.waitForTimeout(600);
 
-  /* sticky bars look broken in a full-page capture; pin them for the shot only */
+  /* the mismatch must actually be visible, or the screenshot is a lie */
+  const shown = await page.textContent('#alignLegend');
+  ok('the specimen back really is mis-scaled, as the screenshot claims',
+     /off by/.test(shown), shown.replace(/\s+/g, ' ').trim());
+
   const unstick = `(() => { const s = document.createElement('style'); s.id='shot';
     s.textContent='.appbar,.dock{position:static!important;backdrop-filter:none!important}';
     document.head.appendChild(s); })()`;
   const restick = `document.getElementById('shot')?.remove()`;
 
+  await page.evaluate(unstick); await page.waitForTimeout(160);
+  await page.locator('#alignPanel').screenshot({ path: path.join(docs, 'align-before.png') });
+  await page.evaluate(restick); await page.waitForTimeout(120);
+
+  await tap(page, '#matchBtn');
+  await page.waitForTimeout(700);
+  const fixed = await page.textContent('#alignLegend');
+  ok('Match back to front closes the gap', /agree/.test(fixed), fixed.replace(/\s+/g, ' ').trim());
+  await page.evaluate(unstick); await page.waitForTimeout(160);
+  await page.locator('#alignPanel').screenshot({ path: path.join(docs, 'align-after.png') });
+  await page.evaluate(restick); await page.waitForTimeout(120);
+
+  /* hero: the working area at a readable size, not a full-page dump */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#copySeg button')].find(x => x.textContent.startsWith('8'));
+    if (b) b.click();
+    window.scrollTo(0, 0);
+  });
+  await page.waitForTimeout(500);
   for (const theme of ['dark', 'light']) {
     await page.evaluate(t => {
       document.documentElement.setAttribute('data-theme', t);
       document.querySelector('#themeIcon').setAttribute('href', t === 'dark' ? '#i-sun' : '#i-moon');
     }, theme);
-    await page.waitForTimeout(260);
-    await page.evaluate(unstick);
-    await page.waitForTimeout(140);
-    await page.screenshot({ path: path.join(docs, `screenshot-${theme}.png`), fullPage: true });
-    await page.evaluate(restick);
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(docs, `hero-${theme}.png`) });
   }
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.querySelector('[data-blend="edges"]').click();
-  });
-  await page.waitForTimeout(520);
-  await page.locator('#alignPanel').screenshot({ path: path.join(docs, 'screenshot-align.png') });
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+  await page.waitForTimeout(250);
 
-  ok('screenshots written to docs/', ['screenshot-dark.png','screenshot-light.png','screenshot-align.png']
+  /* the sheet layout, 8-up, both faces */
+  const sheetPanel = page.locator('.panel', { has: page.locator('#sheetbox') });
+  await sheetPanel.scrollIntoViewIfNeeded();
+  await page.evaluate(unstick); await page.waitForTimeout(320);
+  await sheetPanel.screenshot({ path: path.join(docs, 'sheet.png') });
+  await page.evaluate(restick);
+
+  ok('screenshots written to docs/',
+     ['hero-dark.png','hero-light.png','align-before.png','align-after.png','sheet.png']
      .every(f => fs.existsSync(path.join(docs, f))));
-  ok('screenshots carry no real document — specimen only', true);
   clean();
 
   console.log(`\n\x1b[1m${pass} passed, ${fail} failed\x1b[0m\n`);

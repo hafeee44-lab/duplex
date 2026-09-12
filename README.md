@@ -41,9 +41,14 @@ edge, the back is automatically placed at `210 − 85.6 − 18 = 106.4 mm`. Flip
 the two cards are exactly on top of each other. The mirror is its own inverse, so you can
 drag either face and the other follows.
 
-**Scale is verifiable.** The Align panel superimposes the two sides with four overlay modes —
-ghost, difference, edge-detect, and A/B flip — so a mismatch is visible before it reaches
-paper. A size slider and 0.25 mm nudge fix it.
+**Scale is measured, not eyeballed.** The Align panel scans both cropped sides for where printed
+content begins, draws each as an outline — front in red, back in blue — and reports the difference
+in millimetres, per edge. If the outlines don't sit on each other, your two crops are at different
+scales and the print cannot line up. **Match back to front** corrects it in one click; the size
+slider and 0.25 mm nudge are there for the last fraction.
+
+The outline follows ink, not plastic, so a card that is white right up to its border reads as
+slightly inset. It's presented as a measurement with the numbers attached, not as ground truth.
 
 **Exact millimetres.** The PDF is written by hand, byte by byte, with the card placed via an
 explicit transformation matrix. No library, no rounding through a rasteriser. Verified at
@@ -54,7 +59,8 @@ explicit transformation matrix. No library, no rounding through a rasteriser. Ve
 - **Two-sided mode** — a 2-page PDF, page 2 mirrored so it registers behind page 1
 - **One-face mode** — front and back on a single side, for offices that want it that way
 - **Up to 8 cards per sheet** (9 in portrait), so one card doesn't waste a whole page
-- **Alignment overlay** — ghost / difference / edges / flip, with per-side size and nudge
+- **Alignment measurement** — content-edge detection with per-edge millimetre readout, a one-click
+  match, and overlay / difference / A-B flip views
 - **Printer calibration sheet** — one scrap page tells you your printer's flip behaviour, for good
 - **Crop tool** locked to the real 85.6 × 54 mm ID-1 aspect, with straighten and photo clean-up
 - **Scan or phone photo** — EXIF-aware, with brightness/contrast/grayscale for a clean copy
@@ -121,7 +127,7 @@ npm install playwright
 node test/verify.js
 ```
 
-50 assertions. The suite drives the real UI in headless Chromium and measures the real PDF with
+51 assertions. The suite drives the real UI in headless Chromium and measures the real PDF with
 `pdftoppm` (poppler-utils) plus Pillow/NumPy. It checks:
 
 - **Registration** — un-mirroring every back position lands on a front, swept across all 20
@@ -133,14 +139,17 @@ node test/verify.js
 - **Bounds** — no card outside the 6 mm printable margin, in any configuration
 - **Alignment controls** — the size slider changes only the targeted side, reset restores
   exactly, nudge steps land on 0.25 and 1 mm
+- **The screenshots tell the truth** — the suite asserts the specimen back really is mis-scaled
+  before capturing the "before" image, and that *Match back to front* really closes the gap
+  before capturing the "after" one
 - **Theme resolution** — a fresh profile follows the OS in both directions, a manual override
   survives a reload, choosing what the OS already prefers releases the override, and everything
   still works with `localStorage` throwing
 - **Robustness** — 1×1 images, non-image files, removing a side mid-edit, the flip timer
   stopping when the panel hides, rapid mode switching, no horizontal overflow at 390 px
 
-The verification script also exercises the full capture, alignment, layout, and PDF workflow
-with generated test cards; no sample images are required in the repository.
+The verification script uses generated test cards and does not require sample images in the
+repository.
 
 ## Browser support
 

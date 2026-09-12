@@ -236,31 +236,18 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 .rowbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
 /* ============================================================ align */
-.alignwrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start}
-#alignPanel>header{background:linear-gradient(180deg,var(--surface-2),var(--surface));}
+.alignwrap{display:grid;grid-template-columns:minmax(0,1fr) 254px;gap:18px;align-items:start}
+@media (max-width:900px){.alignwrap{grid-template-columns:1fr}}
 .stagebox{background:var(--board);border:1px solid var(--line);border-radius:var(--r);
-  padding:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
-#alignCv{display:block;width:100%;max-width:640px;height:auto;aspect-ratio:1011/638;background:#fff;border-radius:6px;
-  box-shadow:0 0 0 1px var(--paper-edge),0 12px 28px rgba(0,0,0,.22)}
-.aligncontrols{display:flex;flex-direction:column;gap:10px}
-.aligncontrols .blk{margin:0;padding:13px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2)}
-.aligncontrols .blk h4{margin-bottom:9px}
-.aligncontrols .blk.field{gap:8px}
-@media (max-width:900px){
-  .alignwrap{grid-template-columns:1fr}
-  .aligncontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
-  .aligncontrols .blk:last-child{grid-column:1 / -1}
-}
-@media (max-width:600px){
-  #alignPanel>header{align-items:stretch}
-  #blendSeg{display:flex;width:100%}
-  #blendSeg button{flex:1;padding-inline:7px}
-  .aligncontrols{grid-template-columns:1fr}
-  .aligncontrols .blk:last-child{grid-column:auto}
-}
+  padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px}
+#alignCv{display:block;width:100%;max-width:680px;height:auto;background:#fff;border-radius:5px;
+  box-shadow:0 0 0 1px var(--paper-edge),var(--sh-2)}
 .legend{font-size:11.5px;color:var(--ink-3);display:flex;gap:15px;flex-wrap:wrap;justify-content:center;
   align-items:center;line-height:1.4}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.legend .good{color:var(--ok);font-weight:600}
+.legend .off{color:var(--warn);font-weight:600}
+.meta .row.bad b{color:var(--warn)}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:156px}
 .pad button{padding:8px 0}
 .pad .sp{visibility:hidden}
@@ -274,7 +261,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 .meta .row{display:flex;justify-content:space-between;gap:12px}
 
 /* ============================================================ sheets */
-.layoutwrap{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px}
+.layoutwrap{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px;align-items:start}
 @media (max-width:1000px){.layoutwrap{grid-template-columns:1fr}}
 #sheetbox{display:flex;justify-content:center;align-items:flex-start;gap:22px;padding:22px;
   background:var(--board);border-radius:var(--r);border:1px solid var(--line);flex-wrap:wrap}
@@ -476,10 +463,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
     <header>
       <h2><svg class="ic"><use href="#i-scan"/></svg>Align front &amp; back</h2>
       <span class="seg" id="blendSeg" role="group" aria-label="Overlay mode">
-        <button data-blend="ghost">Ghost</button>
+        <button data-blend="overlay" class="on">Overlay</button>
         <button data-blend="diff">Difference</button>
-        <button data-blend="edges" class="on">Edges</button>
-        <button data-blend="flip">Flip</button>
+        <button data-blend="flip">Flip A/B</button>
       </span>
     </header>
     <div class="body">
@@ -488,7 +474,15 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
           <canvas id="alignCv" width="1011" height="638" aria-label="Front and back overlaid"></canvas>
           <div class="legend" id="alignLegend"></div>
         </div>
-        <div class="aligncontrols">
+        <div>
+          <div class="blk">
+            <h4>Content edges</h4>
+            <div class="meta" id="boundsOut"></div>
+            <label class="chk" style="margin-top:8px"><input type="checkbox" id="showEdges" checked> Draw the outlines</label>
+            <button class="block sm" id="matchBtn" style="margin-top:9px">
+              <svg class="ic"><use href="#i-wand"/></svg>Match back to front</button>
+          </div>
+
           <div class="blk">
             <h4>Adjusting</h4>
             <span class="seg fill" id="targetSeg" role="group" aria-label="Which side to adjust">
@@ -528,10 +522,13 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
       </div>
       <div class="note tip" style="margin-top:16px">
         <svg class="ic"><use href="#i-info"/></svg>
-        <div>Both sides are the same piece of plastic, so the card has to end up the same size in both boxes.
-        Line up the card's <b>own edges</b> here, not the white box around it.
-        <b>Ghost</b> lays one over the other, <b>Difference</b> goes black where they match,
-        <b>Edges</b> draws front in red and back in blue so shared edges turn dark, <b>Flip</b> alternates them.</div>
+        <div>Both sides are the same piece of plastic, so the card must end up the same size in both
+        boxes. The <b style="color:#ff3355">red</b> and <b style="color:#2f7bff">blue</b> outlines mark
+        where printed content starts in each crop — if they don't sit on each other, your two crops are
+        at different scales and the print won't line up. <b>Match back to front</b> fixes it in one go;
+        the size slider and nudge are for the last fraction of a millimetre.
+        <br><br>The outline follows ink, not plastic — a card that is white right up to its border reads
+        as slightly inset. Treat it as a measurement and trust your eyes on the real edge.</div>
       </div>
     </div>
   </section>
@@ -1531,41 +1528,87 @@ function doPrint(){
 }
 
 /* ------------------------------------------------------- align panel */
-var AL = { blend:'edges', target:'back', flipT:null, flipOn:false };
-var edgeBuf = { w:0, h:0, cv:null, a:null, b:null, id:null };
+var AL = { blend:'overlay', target:'back', flipT:null, flipOn:false, showEdges:true };
 
-function edgeMap(srcCanvas, w, h, slot){
-  if(!edgeBuf.cv || edgeBuf.w!==w || edgeBuf.h!==h){
-    edgeBuf.cv = document.createElement('canvas');
-    edgeBuf.cv.width = w; edgeBuf.cv.height = h;
-    edgeBuf.w = w; edgeBuf.h = h;
-    edgeBuf.a = new Float32Array(w*h);
-    edgeBuf.b = new Float32Array(w*h);
-    edgeBuf.lum = new Float32Array(w*h);
-    edgeBuf.id = null;
+/* ---- where does printed content start inside each 85.6 x 54 box? ----------
+   This is the measurement that matters. Both sides are the same piece of
+   plastic, so if content begins 0.3 mm in on one side and 2.6 mm in on the
+   other, the two crops are at different scales and the print cannot line up.
+   It finds ink, not the plastic edge — a card that is white right to its
+   border reads as inset — so it is presented as a measurement, not as truth. */
+var bBuf = null;
+function detectBounds(cv){
+  var W = 338, H = 213;
+  if(!bBuf){ bBuf = document.createElement('canvas'); bBuf.width = W; bBuf.height = H; }
+  var g;
+  try { g = bBuf.getContext('2d', { willReadFrequently:true }); }
+  catch(e){ g = bBuf.getContext('2d'); }
+  g.fillStyle = '#fff'; g.fillRect(0,0,W,H);
+  g.drawImage(cv, 0, 0, W, H);
+  var d = g.getImageData(0,0,W,H).data;
+  function ink(i){
+    var r = d[i], gg = d[i+1], b = d[i+2];
+    var mx = r>gg ? (r>b?r:b) : (gg>b?gg:b);
+    var mn = r<gg ? (r<b?r:b) : (gg<b?gg:b);
+    return (0.299*r + 0.587*gg + 0.114*b) < 231 || (mx - mn) > 30;
   }
-  var into = edgeBuf[slot];
-  var g = edgeBuf.cv.getContext('2d');
-  g.clearRect(0,0,w,h);
-  g.drawImage(srcCanvas, 0, 0, w, h);
-  var p = g.getImageData(0,0,w,h).data, lum = edgeBuf.lum;
-  for(var i=0,j=0;j<lum.length;i+=4,j++) lum[j] = 0.299*p[i] + 0.587*p[i+1] + 0.114*p[i+2];
-  var out = into, max = 1;
-  out.fill(0);
-  for(var y=1;y<h-1;y++){
-    for(var x=1;x<w-1;x++){
-      var k = y*w+x;
-      var gx = -lum[k-w-1] - 2*lum[k-1] - lum[k+w-1] + lum[k-w+1] + 2*lum[k+1] + lum[k+w+1];
-      var gy = -lum[k-w-1] - 2*lum[k-w] - lum[k-w+1] + lum[k+w-1] + 2*lum[k+w] + lum[k+w+1];
-      var m = Math.sqrt(gx*gx + gy*gy);
-      out[k] = m;
-      if(m > max) max = m;
-    }
+  var needRow = Math.max(3, Math.round(W*0.05));
+  var needCol = Math.max(3, Math.round(H*0.05));
+  var top = -1, bot = -1, left = -1, right = -1, x, y, c;
+  for(y=0;y<H;y++){ c=0; for(x=0;x<W;x++) if(ink((y*W+x)*4)) c++; if(c>=needRow){ top=y; break; } }
+  for(y=H-1;y>=0;y--){ c=0; for(x=0;x<W;x++) if(ink((y*W+x)*4)) c++; if(c>=needRow){ bot=y; break; } }
+  for(x=0;x<W;x++){ c=0; for(y=0;y<H;y++) if(ink((y*W+x)*4)) c++; if(c>=needCol){ left=x; break; } }
+  for(x=W-1;x>=0;x--){ c=0; for(y=0;y<H;y++) if(ink((y*W+x)*4)) c++; if(c>=needCol){ right=x; break; } }
+  if(top < 0 || left < 0 || bot < top || right < left){
+    return { l:0, t:0, r:0, b:0, w:0, h:0, empty:true };
   }
-  for(var n=0;n<out.length;n++) out[n] /= max;
-  return out;
+  return {
+    l: left/W*CARD_W,          t: top/H*CARD_H,
+    r: (W-1-right)/W*CARD_W,   b: (H-1-bot)/H*CARD_H,
+    w: (right-left+1)/W*CARD_W, h: (bot-top+1)/H*CARD_H,
+    empty: false
+  };
 }
-function legend(html){ $('#alignLegend').innerHTML = html; }
+function drawBounds(g, W, H, fb, bb){
+  var sx = W/CARD_W, sy = H/CARD_H;
+  var lw = Math.max(2, Math.round(W/380));
+  function box(bd, col, pad, dash){
+    if(bd.empty) return;
+    g.save();
+    g.strokeStyle = col; g.lineWidth = lw;
+    if(dash) g.setLineDash([W/72, W/96]);
+    g.strokeRect(bd.l*sx - pad, bd.t*sy - pad, bd.w*sx + pad*2, bd.h*sy + pad*2);
+    g.restore();
+  }
+  box(fb, '#ff3355', 0, false);
+  box(bb, '#2f7bff', lw + 1, true);
+}
+function legendFor(fb, bb){
+  if(fb.empty || bb.empty){
+    $('#alignLegend').innerHTML = '<span>No content detected in one of the sides.</span>';
+    return;
+  }
+  var dw = bb.w - fb.w, dh = bb.h - fb.h;
+  var off = Math.abs(dw) > 0.4 || Math.abs(dh) > 0.4;
+  $('#alignLegend').innerHTML =
+    '<span><i style="background:#ff3355"></i>front ' + fb.w.toFixed(1) + ' × ' + fb.h.toFixed(1) + ' mm</span>' +
+    '<span><i style="background:#2f7bff"></i>back ' + bb.w.toFixed(1) + ' × ' + bb.h.toFixed(1) + ' mm</span>' +
+    '<span class="' + (off ? 'off' : 'good') + '">' + (off
+      ? 'off by ' + Math.abs(dw).toFixed(1) + ' × ' + Math.abs(dh).toFixed(1) + ' mm'
+      : 'the two agree') + '</span>';
+}
+function boundsReadout(fb, bb){
+  function row(label, a, b){
+    var bad = Math.abs(a - b) > 0.4;
+    return '<div class="row' + (bad ? ' bad' : '') + '"><span>' + label + '</span><b>' +
+           a.toFixed(2) + ' / ' + b.toFixed(2) + '</b></div>';
+  }
+  if(fb.empty || bb.empty){ $('#boundsOut').innerHTML = '<div class="row"><span>—</span><b>n/a</b></div>'; return; }
+  $('#boundsOut').innerHTML =
+    '<div class="row" style="color:var(--ink-3)"><span>inset mm</span><b>front / back</b></div>' +
+    row('top', fb.t, bb.t) + row('bottom', fb.b, bb.b) +
+    row('left', fb.l, bb.l) + row('right', fb.r, bb.r);
+}
 function renderAlign(){
   if(!bothReady()) return;
   var cv = $('#alignCv'), W = cv.width, H = cv.height;
@@ -1574,42 +1617,22 @@ function renderAlign(){
   g.fillStyle = '#fff'; g.fillRect(0,0,W,H);
   var F = S.front.out, B = S.back.out;
 
-  if(AL.blend === 'ghost'){
-    g.drawImage(F, 0, 0, W, H);
-    g.globalAlpha = 0.5; g.drawImage(B, 0, 0, W, H); g.globalAlpha = 1;
-    legend('<span><i style="background:var(--ink-3)"></i>front and back at half strength — match the card edges</span>');
-  } else if(AL.blend === 'diff'){
+  if(AL.blend === 'diff'){
     g.drawImage(F, 0, 0, W, H);
     g.globalCompositeOperation = 'difference';
     g.drawImage(B, 0, 0, W, H);
     g.globalCompositeOperation = 'source-over';
-    legend('<span><i style="background:#111"></i>black where the two agree — watch the outer edges</span>');
-  } else if(AL.blend === 'edges'){
-    var w = 506, h = 319;
-    var ef = edgeMap(F, w, h, 'a');
-    var eb = edgeMap(B, w, h, 'b');
-    if(!edgeBuf.id) edgeBuf.id = new ImageData(w, h);
-    var d = edgeBuf.id.data;
-    for(var i=0;i<w*h;i++){
-      var a = Math.min(1, ef[i]*2.2), b = Math.min(1, eb[i]*2.2);
-      d[i*4]   = 255 - Math.round(b*255);
-      d[i*4+1] = 255 - Math.round(Math.max(a,b)*255);
-      d[i*4+2] = 255 - Math.round(a*255);
-      d[i*4+3] = 255;
-    }
-    var tg = edgeBuf.cv.getContext('2d');
-    tg.putImageData(edgeBuf.id, 0, 0);
-    g.imageSmoothingEnabled = false;
-    g.drawImage(edgeBuf.cv, 0, 0, W, H);
-    g.imageSmoothingEnabled = true;
-    legend('<span><i style="background:#e0245e"></i>front</span>' +
-           '<span><i style="background:#2b3fd0"></i>back</span>' +
-           '<span><i style="background:#333"></i>both — dark edges mean they agree</span>');
-  } else {
+  } else if(AL.blend === 'flip'){
     g.drawImage(AL.flipOn ? B : F, 0, 0, W, H);
-    legend('<span><i style="background:var(--accent)"></i>showing the <b>' +
-           (AL.flipOn ? 'back' : 'front') + '</b> — watch for anything that jumps</span>');
+  } else {
+    g.drawImage(F, 0, 0, W, H);
+    g.globalAlpha = 0.5; g.drawImage(B, 0, 0, W, H); g.globalAlpha = 1;
   }
+
+  var fb = detectBounds(F), bb = detectBounds(B);
+  if(AL.showEdges) drawBounds(g, W, H, fb, bb);
+  legendFor(fb, bb);
+  boundsReadout(fb, bb);
 }
 function setFlipTimer(){
   if(AL.flipT){ clearInterval(AL.flipT); AL.flipT = null; }
@@ -1628,6 +1651,8 @@ function syncAlign(){
   $('#aSize').value = (c.adj.s * 100).toFixed(1);
   $('#vSize').textContent = (c.adj.s * 100).toFixed(1) + '%';
   $('#vOff').textContent = c.adj.dx.toFixed(2) + ', ' + c.adj.dy.toFixed(2) + ' mm';
+  $('#matchBtn').innerHTML = '<svg class="ic"><use href="#i-wand"/></svg>Match ' +
+    AL.target + ' to ' + (AL.target === 'back' ? 'front' : 'back');
   var sameSize = S.front.work && S.back.work &&
                  S.front.work.width === S.back.work.width &&
                  S.front.work.height === S.back.work.height;
@@ -1649,6 +1674,36 @@ function afterAdjust(){
     adjRaf = null;
     paintSlot(side); drawSheets(); renderAlign();
   });
+}
+/* one-click correction: scale the target side so its content matches the
+   other, then re-measure and centre it. Two passes, because the scale changes
+   what the measurement sees. */
+function matchBounds(){
+  var side = AL.target, other = side === 'back' ? 'front' : 'back';
+  var to = S[side], ref = S[other];
+  if(!to.out || !ref.out || !to.baseCrop) return;
+  var rb = detectBounds(ref.out), tb = detectBounds(to.out);
+  if(rb.empty || tb.empty || tb.h < 2 || tb.w < 2){
+    say('Could not find enough content to match against.', 'bad'); return;
+  }
+  var sH = rb.h / tb.h, sW = rb.w / tb.w;
+  var k = Math.abs(sH - 1) >= Math.abs(sW - 1) ? sH : sW;
+  /* quantised to the slider's 0.2% step so the control and the state agree */
+  to.adj.s = Math.round(clamp(to.adj.s * k, 0.8, 1.25) * 500) / 500;
+  applyAdj(to);
+  var tb2 = detectBounds(to.out);
+  if(!tb2.empty){
+    to.adj.dx = Math.round((to.adj.dx + (rb.l + rb.w/2) - (tb2.l + tb2.w/2)) * 100) / 100;
+    to.adj.dy = Math.round((to.adj.dy + (rb.t + rb.h/2) - (tb2.t + tb2.h/2)) * 100) / 100;
+    applyAdj(to);
+  }
+  $('#aSize').value = (to.adj.s * 100).toFixed(1);
+  paintSlot(side); drawSheets(); syncAlign();
+  var after = detectBounds(to.out);
+  var dh = Math.abs(after.h - rb.h), dw = Math.abs(after.w - rb.w);
+  say((dh < 0.4 && dw < 0.4)
+      ? 'Matched — both sides now measure the same.'
+      : 'Close as it gets automatically — nudge the rest.', 'ok');
 }
 
 /* ------------------------------------------------------- wiring */
@@ -1797,6 +1852,10 @@ $$('[data-nudge]').forEach(function(b){
     afterAdjust();
   });
 });
+$('#showEdges').addEventListener('change', function(e){
+  AL.showEdges = e.target.checked; renderAlign();
+});
+$('#matchBtn').addEventListener('click', matchBounds);
 $('#resetAdj').addEventListener('click', function(){
   S[AL.target].adj = { s:1, dx:0, dy:0 };
   $('#aSize').value = 100;
